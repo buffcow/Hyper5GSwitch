@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">5G开关</string>
+    <string name="hyper_5g_switch_title">5G网络</string>
+    <string name="xposed_description">在移动网络面板中添加 5G 开关，仅适用于支持5G网络并搭载 HyperOS 的设备。</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">5G Switch</string>
+    <string name="hyper_5g_switch_title">5G Network</string>
+    <string name="xposed_description">Add a 5G switch to the mobile network panel, only for devices that support 5G and equipped with HyperOS.</string>
+</resources>
