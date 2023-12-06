@@ -61,11 +61,10 @@ android {
 }
 
 dependencies {
-    compileOnly(libs.api.xposed)
-    compileOnly(files("libs/telephony.jar"))
-
     ksp(libs.ksp.yuki.xposed)
     implementation(libs.api.yuki)
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.annotation)
+
+    compileOnly(libs.api.xposed)
+    compileOnly(files("libs/telephony.jar"))
 }

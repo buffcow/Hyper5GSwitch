@@ -5,7 +5,7 @@
  * <p>Create on 2023/12/01 15:56</p>
  */
 
-package cn.buffcow.hyper5g.ext
+package cn.buffcow.hyper5g.extension
 
 import android.content.ComponentName
 

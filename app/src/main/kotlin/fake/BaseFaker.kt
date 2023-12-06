@@ -1,6 +1,6 @@
 package fake
 
-import cn.buffcow.hyper5g.ext.toClassByAppClsLoader
+import cn.buffcow.hyper5g.extension.toClassByAppClsLoader
 import com.highcapable.yukihookapi.hook.factory.toClass
 import de.robv.android.xposed.XposedHelpers.callMethod
 import de.robv.android.xposed.XposedHelpers.callStaticMethod

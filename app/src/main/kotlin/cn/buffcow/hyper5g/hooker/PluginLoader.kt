@@ -1,6 +1,6 @@
 package cn.buffcow.hyper5g.hooker
 
-import cn.buffcow.hyper5g.ext.SystemUI
+import cn.buffcow.hyper5g.extension.SystemUI
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.constructor
 import com.highcapable.yukihookapi.hook.log.YLog

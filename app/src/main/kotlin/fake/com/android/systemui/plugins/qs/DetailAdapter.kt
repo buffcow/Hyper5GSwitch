@@ -4,7 +4,7 @@ import android.content.Intent
 import fake.BaseFaker
 
 /**
- * @author YiyuYang
+ * @author qingyu
  * Email: yangyiyu@dofun.cc
  * <p>Create on 2023/12/01 15:30</p>
  */

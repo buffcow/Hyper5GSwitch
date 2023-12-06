@@ -11,7 +11,6 @@ agp-app = { id = "com.android.application", version.ref = "agp" }
 kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
 [libraries]
-androidx-core-ktx = "androidx.core:core-ktx:1.12.0"
 androidx-annotation = "androidx.annotation:annotation:1.7.0"
 api-xposed = "de.robv.android.xposed:api:82"
 api-yuki = { module = "com.highcapable.yukihookapi:api", version.ref = "yuki" }

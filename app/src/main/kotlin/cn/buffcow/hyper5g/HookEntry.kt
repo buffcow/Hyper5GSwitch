@@ -1,7 +1,7 @@
 package cn.buffcow.hyper5g
 
-import cn.buffcow.hyper5g.ext.LOG_TAG
-import cn.buffcow.hyper5g.ext.SystemUI
+import cn.buffcow.hyper5g.extension.LOG_TAG
+import cn.buffcow.hyper5g.extension.SystemUI
 import cn.buffcow.hyper5g.hooker.PluginLoader
 import com.highcapable.yukihookapi.annotation.xposed.InjectYukiHookWithXposed
 import com.highcapable.yukihookapi.hook.factory.configs
