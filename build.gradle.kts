@@ -13,8 +13,8 @@ plugins {
     alias(libs.plugins.agp.lib) apply false
 }
 
-val defaultAppVerCode by extra(1)
-val defaultAppVerName by extra("1.0.0")
+val defaultAppVerCode by extra(2)
+val defaultAppVerName by extra("1.0.1")
 val defaultAppPackageName by extra("cn.buffcow.hyper5g")
 
 val androidMinSdkVersion by extra(24)
