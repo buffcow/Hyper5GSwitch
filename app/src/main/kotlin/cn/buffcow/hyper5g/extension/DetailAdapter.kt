@@ -11,5 +11,5 @@ import fake.com.android.systemui.plugins.qs.DetailAdapter
 
 internal val DetailAdapter?.isCellularDetailPanel
     get() = this?.let {
-        it.hasHeader() && it.getSettingsIntent().component == Phone.CMP_NET_SETTINGS
+        it.getSettingsIntent().component == Phone.CMP_NET_SETTINGS
     } ?: false

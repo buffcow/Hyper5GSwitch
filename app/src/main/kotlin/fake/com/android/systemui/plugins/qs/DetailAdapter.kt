@@ -10,7 +10,5 @@ import fake.BaseFaker
  */
 internal class DetailAdapter(adapter: Any) : BaseFaker(adapter) {
 
-    fun hasHeader(): Boolean = invokeAny("hasHeader")
-
     fun getSettingsIntent(): Intent = invokeAny("getSettingsIntent")
 }
