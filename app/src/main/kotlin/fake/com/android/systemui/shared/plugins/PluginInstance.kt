@@ -12,7 +12,10 @@ internal class PluginInstance(plugin: Any) : BaseFaker(plugin) {
 
     val componentName: ComponentName get() = fieldAny("mComponentName")
 
-    val pluginFactory: PluginFactory get() = PluginFactory(fieldAny("mPluginFactory"))
+    private val pluginFactory: PluginFactory get() = PluginFactory(fieldAny("mPluginFactory"))
+
+    val pluginClassLoader
+        get() = pluginFactory.classLoaderFactory.get()
 
     class PluginFactory(factory: Any) : BaseFaker(factory) {
         val classLoaderFactory: Supplier<ClassLoader> get() = fieldAny("mClassLoaderFactory")

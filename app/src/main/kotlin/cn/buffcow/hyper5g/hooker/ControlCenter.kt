@@ -3,17 +3,9 @@ package cn.buffcow.hyper5g.hooker
 import android.content.Intent
 import android.widget.CheckBox
 import android.widget.TextView
-import cn.buffcow.hyper5g.R
 import cn.buffcow.hyper5g.extension.CellSignalCallback
 import cn.buffcow.hyper5g.extension.Phone
-import cn.buffcow.hyper5g.extension.addDetailHeaderLayout
-import cn.buffcow.hyper5g.extension.getActivityStarter
-import cn.buffcow.hyper5g.extension.header5GToggle
-import cn.buffcow.hyper5g.extension.headerTiltleTv
-import cn.buffcow.hyper5g.extension.inflatedHeaderView
-import cn.buffcow.hyper5g.extension.isCellularDetailPanel
 import cn.buffcow.hyper5g.extension.isVisible
-import cn.buffcow.hyper5g.extension.pluginClassLoader
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.java.IntType
@@ -22,6 +14,7 @@ import fake.com.android.systemui.shared.plugins.PluginInstance
 import fake.miui.systemui.controlcenter.panel.detail.DetailPanelController
 import fake.miui.systemui.controlcenter.utils.DetailAdapterCompat
 import miui.telephony.TelephonyManager
+import java.util.Locale
 
 /**
  * Hooker for control center in systemui plugin.
@@ -36,9 +29,8 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
     private val telephonyManager by lazy { TelephonyManager.getDefault() }
 
     private val adapterCompat by lazy { DetailAdapterCompat(pluginClassLoader) }
-    private val tv5GTitle by lazy { moduleAppResources.getString(R.string.hyper_5g_switch_title) }
-
     private val activityStarter by lazy { Dependency.getActivityStarter() }
+
     private val fivegSettingIntent by lazy { Intent().setComponent(Phone.CMP_FIVEG_SETTING) }
 
     private var panelController: DetailPanelController? = null
@@ -67,6 +59,10 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
             name = DetailPanelController.M_setupDetailHeader
         }.hook { after { setupDetailHeader() } }
 
+        ctrlCls.method { name = DetailPanelController.M_updateTexts }.hook {
+            after { panelController?.headerTiltleTv?.updateText() }
+        }
+
         ctrlCls.method { name = DetailPanelController.M_updateBackgroundColor }.hook {
             after { panelController?.headerTiltleTv?.updateBackgroundColor() }
         }
@@ -76,7 +72,7 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
         panelController?.apply {
             inflatedHeaderView.isVisible = detailAdapter.isCellularDetailPanel
             headerTiltleTv.apply {
-                text = tv5GTitle
+                updateText()
                 updateBackgroundColor()
                 setOnLongClickListener {
                     activityStarter.postStartActivityDismissingKeyguard(fivegSettingIntent, 0)
@@ -89,6 +85,14 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
                     telephonyManager.isUserFiveGEnabled = isChecked
                 }
             }
+        }
+    }
+
+    private fun TextView.updateText() {
+        text = when (Locale.getDefault()) {
+            Locale("zh", "CN") -> "5G网络"
+            Locale("zh", "TW") -> "5G網絡"
+            else -> "5G Network"
         }
     }
 

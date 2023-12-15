@@ -1,6 +1,7 @@
 package fake.com.android.systemui.plugins.qs
 
 import android.content.Intent
+import cn.buffcow.hyper5g.extension.Phone
 import fake.BaseFaker
 
 /**
@@ -10,5 +11,8 @@ import fake.BaseFaker
  */
 internal class DetailAdapter(adapter: Any) : BaseFaker(adapter) {
 
-    fun getSettingsIntent(): Intent = invokeAny("getSettingsIntent")
+    val isCellularDetailPanel
+        get() = getSettingsIntent().component == Phone.CMP_NET_SETTINGS
+
+    private fun getSettingsIntent(): Intent = invokeAny("getSettingsIntent")
 }

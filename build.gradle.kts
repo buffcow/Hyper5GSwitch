@@ -14,7 +14,7 @@ plugins {
 }
 
 val defaultAppVerCode by extra(2)
-val defaultAppVerName by extra("1.0.1")
+val defaultAppVerName by extra("1.0.2")
 val defaultAppPackageName by extra("cn.buffcow.hyper5g")
 
 val androidMinSdkVersion by extra(24)
