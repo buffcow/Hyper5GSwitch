@@ -3,6 +3,7 @@ package cn.buffcow.hyper5g.hooker
 import android.content.Intent
 import android.widget.CheckBox
 import android.widget.TextView
+import cn.buffcow.hyper5g.R
 import cn.buffcow.hyper5g.extension.CellSignalCallback
 import cn.buffcow.hyper5g.extension.Phone
 import cn.buffcow.hyper5g.extension.isVisible
@@ -14,7 +15,6 @@ import fake.com.android.systemui.shared.plugins.PluginInstance
 import fake.miui.systemui.controlcenter.panel.detail.DetailPanelController
 import fake.miui.systemui.controlcenter.utils.DetailAdapterCompat
 import miui.telephony.TelephonyManager
-import java.util.Locale
 
 /**
  * Hooker for control center in systemui plugin.
@@ -89,11 +89,8 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
     }
 
     private fun TextView.updateText() {
-        text = when (Locale.getDefault()) {
-            Locale("zh", "CN") -> "5G网络"
-            Locale("zh", "TW") -> "5G網絡"
-            else -> "5G Network"
-        }
+        refreshModuleAppResources()
+        text = moduleAppResources.getString(R.string.hyper_5g_switch_title)
     }
 
     private fun CheckBox.updateToggleStatus(slot: Int? = null) {

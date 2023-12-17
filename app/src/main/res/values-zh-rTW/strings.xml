@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">5G開關</string>
+    <string name="hyper_5g_switch_title">5G網絡</string>
+    <string name="xposed_description">在數據網路面板中新增 5G 開關，僅適用於支援5G網路並搭載 HyperOS 的裝置。</string>
+</resources>
