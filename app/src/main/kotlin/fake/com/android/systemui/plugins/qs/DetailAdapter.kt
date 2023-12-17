@@ -12,7 +12,7 @@ import fake.BaseFaker
 internal class DetailAdapter(adapter: Any) : BaseFaker(adapter) {
 
     val isCellularDetailPanel
-        get() = getSettingsIntent().component == Phone.CMP_NET_SETTINGS
+        get() = getSettingsIntent()?.component == Phone.CMP_NET_SETTINGS
 
-    private fun getSettingsIntent(): Intent = invokeAny("getSettingsIntent")
+    private fun getSettingsIntent(): Intent? = invokeAny("getSettingsIntent")
 }
