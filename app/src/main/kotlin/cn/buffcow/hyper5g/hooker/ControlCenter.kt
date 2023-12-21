@@ -1,6 +1,8 @@
 package cn.buffcow.hyper5g.hooker
 
 import android.content.Intent
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.widget.CheckBox
 import android.widget.TextView
 import cn.buffcow.hyper5g.R
@@ -33,9 +35,28 @@ internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
     }
     private val activityStarter by lazy { Dependency.getActivityStarter() }
 
-    private val fivegSettingIntent by lazy { Intent().setComponent(Phone.CMP_FIVEG_SETTING) }
+    private val fivegSettingIntent by lazy {
+        Intent().setComponent(Phone.CMP_FIVEG_SETTING).setFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK xor Intent.FLAG_ACTIVITY_CLEAR_TASK
+        )
+    }
 
     private var panelController: DetailPanelController? = null
+
+    private val doubleTapDetector by lazy {
+        val ctx = factory.pluginCtxRef.get() ?: return@lazy null
+        GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                activityStarter.postStartActivityDismissingKeyguard(
+                    Intent().setComponent(Phone.CMP_NET_TYPE_PREF).setFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK xor Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    ),
+                    0
+                )
+                return true
+            }
+        })
+    }
 
     override fun onHook() {
         if (telephonyManager.isFiveGCapable) {
@@ -77,6 +98,10 @@ internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
                 setOnLongClickListener {
                     activityStarter.postStartActivityDismissingKeyguard(fivegSettingIntent, 0)
                     true
+                }
+                setOnTouchListener { v, event ->
+                    v.performClick()
+                    doubleTapDetector?.onTouchEvent(event) ?: true
                 }
             }
             header5GToggle.apply {

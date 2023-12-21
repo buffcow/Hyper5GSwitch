@@ -24,6 +24,7 @@ object Phone {
     private const val PACKAGE_NAME = "com.android.phone"
     val CMP_NET_SETTINGS = ComponentName(PACKAGE_NAME, "$PACKAGE_NAME.settings.MobileNetworkSettings")
     val CMP_FIVEG_SETTING = ComponentName(PACKAGE_NAME, "$PACKAGE_NAME.settings.MiuiFiveGNetworkSetting")
+    val CMP_NET_TYPE_PREF = ComponentName(PACKAGE_NAME, "$PACKAGE_NAME.settings.PreferredNetworkTypeListPreference")
 }
 
 object CellSignalCallback {
