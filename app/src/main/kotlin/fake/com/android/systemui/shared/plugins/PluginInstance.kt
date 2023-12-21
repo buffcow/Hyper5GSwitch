@@ -1,27 +1,23 @@
 package fake.com.android.systemui.shared.plugins
 
 import android.content.ComponentName
+import android.content.Context
 import fake.BaseFaker
-import java.util.function.Supplier
+import java.lang.ref.WeakReference
 
 /**
  * @author qingyu
  * <p>Create on 2023/12/01 14:58</p>
  */
-internal class PluginInstance(plugin: Any) : BaseFaker(plugin) {
 
-    val componentName: ComponentName get() = fieldAny("mComponentName")
+internal class PluginFactory(factory: Any) : BaseFaker(factory) {
 
-    private val pluginFactory: PluginFactory get() = PluginFactory(fieldAny("mPluginFactory"))
+    lateinit var pluginCtxRef: WeakReference<Context>
 
-    val pluginClassLoader
-        get() = pluginFactory.classLoaderFactory.get()
-
-    class PluginFactory(factory: Any) : BaseFaker(factory) {
-        val classLoaderFactory: Supplier<ClassLoader> get() = fieldAny("mClassLoaderFactory")
-    }
+    val mComponentName: ComponentName get() = fieldAny("mComponentName")
 
     companion object {
-        const val CLASS_NAME = "com.android.systemui.shared.plugins.PluginInstance"
+        const val CLASS_NAME = "com.android.systemui.shared.plugins.PluginInstance\$PluginFactory"
+        const val M_createPluginContext = "createPluginContext"
     }
 }

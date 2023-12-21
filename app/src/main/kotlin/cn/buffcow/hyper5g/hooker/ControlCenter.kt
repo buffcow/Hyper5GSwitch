@@ -11,7 +11,7 @@ import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.factory.method
 import com.highcapable.yukihookapi.hook.type.java.IntType
 import fake.com.android.systemui.Dependency
-import fake.com.android.systemui.shared.plugins.PluginInstance
+import fake.com.android.systemui.shared.plugins.PluginFactory
 import fake.miui.systemui.controlcenter.panel.detail.DetailPanelController
 import fake.miui.systemui.controlcenter.utils.DetailAdapterCompat
 import miui.telephony.TelephonyManager
@@ -22,13 +22,15 @@ import miui.telephony.TelephonyManager
  * @author qingyu
  * <p>Create on 2023/11/30 17:58</p>
  */
-internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
+internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
 
-    private val pluginClassLoader = plugin.pluginClassLoader
+    private val pluginClsLoader = factory.pluginCtxRef.get()?.classLoader
 
     private val telephonyManager by lazy { TelephonyManager.getDefault() }
 
-    private val adapterCompat by lazy { DetailAdapterCompat(pluginClassLoader) }
+    private val adapterCompat by lazy {
+        DetailAdapterCompat(pluginClsLoader ?: return@lazy null)
+    }
     private val activityStarter by lazy { Dependency.getActivityStarter() }
 
     private val fivegSettingIntent by lazy { Intent().setComponent(Phone.CMP_FIVEG_SETTING) }
@@ -43,28 +45,26 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
     }
 
     private fun hookDetailPanelController() {
-        val ctrlCls = DetailPanelController.CLASS_NAME.toClass(pluginClassLoader)
+        val ctrlCls = DetailPanelController.CLASS_NAME.toClass(pluginClsLoader)
 
-        ctrlCls.method { name = DetailPanelController.M_onCreate }.hook {
-            after {
-                DetailPanelController(instance).also { ctrl ->
-                    panelController = ctrl
-                    ctrl.addDetailHeaderLayout()
-                }
+        ctrlCls.method { name = DetailPanelController.M_onCreate }.hook().after {
+            DetailPanelController(instance).also { ctrl ->
+                panelController = ctrl
+                ctrl.addDetailHeaderLayout()
             }
         }
 
         ctrlCls.method {
             paramCount(1)
             name = DetailPanelController.M_setupDetailHeader
-        }.hook { after { setupDetailHeader() } }
+        }.hook().after { setupDetailHeader() }
 
-        ctrlCls.method { name = DetailPanelController.M_updateTexts }.hook {
-            after { panelController?.headerTiltleTv?.updateText() }
+        ctrlCls.method { name = DetailPanelController.M_updateTexts }.hook().after {
+            panelController?.headerTiltleTv?.updateText()
         }
 
-        ctrlCls.method { name = DetailPanelController.M_updateBackgroundColor }.hook {
-            after { panelController?.headerTiltleTv?.updateBackgroundColor() }
+        ctrlCls.method { name = DetailPanelController.M_updateBackgroundColor }.hook().after {
+            panelController?.headerTiltleTv?.updateBackgroundColor()
         }
     }
 
@@ -101,7 +101,7 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
 
     private fun TextView.updateBackgroundColor() {
         val adapter = panelController?.detailAdapter ?: return
-        val color = adapterCompat.getTitleTextColorCompat(adapter, context)
+        val color = adapterCompat?.getTitleTextColorCompat(adapter, context) ?: return
         setTextColor(color)
     }
 
@@ -109,13 +109,11 @@ internal class ControlCenter(plugin: PluginInstance) : YukiBaseHooker() {
         CellSignalCallback.CLASS_NAME.toClass().method {
             param(IntType)
             name = CellSignalCallback.M_setDefaultSim
-        }.hook {
-            after {
-                panelController?.apply {
-                    getView().postDelayed({
-                        header5GToggle.updateToggleStatus(args(0).int())
-                    }, 100)
-                }
+        }.hook().after {
+            panelController?.apply {
+                getView().postDelayed({
+                    header5GToggle.updateToggleStatus(args(0).int())
+                }, 100)
             }
         }
     }
