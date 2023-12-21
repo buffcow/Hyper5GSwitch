@@ -101,7 +101,7 @@ internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
                 }
                 setOnTouchListener { v, event ->
                     v.performClick()
-                    doubleTapDetector?.onTouchEvent(event) ?: true
+                    doubleTapDetector?.onTouchEvent(event) ?: false
                 }
             }
             header5GToggle.apply {
