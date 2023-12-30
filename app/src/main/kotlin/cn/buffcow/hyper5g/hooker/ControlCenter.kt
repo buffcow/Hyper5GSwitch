@@ -1,8 +1,7 @@
 package cn.buffcow.hyper5g.hooker
 
 import android.content.Intent
-import android.view.GestureDetector
-import android.view.MotionEvent
+import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import cn.buffcow.hyper5g.R
@@ -43,19 +42,23 @@ internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
 
     private var panelController: DetailPanelController? = null
 
-    private val doubleTapDetector by lazy {
-        val ctx = factory.pluginCtxRef.get() ?: return@lazy null
-        GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent): Boolean {
-                activityStarter.postStartActivityDismissingKeyguard(
-                    Intent().setComponent(Phone.CMP_NET_TYPE_PREF).setFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK xor Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    ),
-                    0
-                )
-                return true
+    private val titleDoubleClickListener by lazy {
+        object : View.OnClickListener {
+            private var lastClickTime: Long = 0
+
+            override fun onClick(v: View) {
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastClickTime < 300) {
+                    activityStarter.postStartActivityDismissingKeyguard(
+                        Intent().setComponent(Phone.CMP_NET_TYPE_PREF).setFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK xor Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        ),
+                        0
+                    )
+                }
+                lastClickTime = currentTime
             }
-        })
+        }
     }
 
     override fun onHook() {
@@ -99,10 +102,7 @@ internal class ControlCenter(factory: PluginFactory) : YukiBaseHooker() {
                     activityStarter.postStartActivityDismissingKeyguard(fivegSettingIntent, 0)
                     true
                 }
-                setOnTouchListener { v, event ->
-                    v.performClick()
-                    doubleTapDetector?.onTouchEvent(event) ?: false
-                }
+                setOnClickListener(titleDoubleClickListener)
             }
             header5GToggle.apply {
                 updateToggleStatus()
