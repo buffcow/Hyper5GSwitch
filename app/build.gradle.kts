@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import com.android.SdkConstants
+import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
 
@@ -9,24 +11,23 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val properties by lazy {
-    rootProject.file("local.properties").takeIf { it.exists() }?.let { f ->
-        Properties().apply { load(f.inputStream()) }.takeUnless {
-            it.keys().toList().count { k -> k.toString().contains("sign") } < 3
-        }
+val localProp by lazy {
+    Properties().apply {
+        load(rootProject.file(SdkConstants.FN_LOCAL_PROPERTIES).bufferedReader())
     }
 }
+var releaseSigningCfg: ApkSigningConfig? = null
 
 android {
-    properties?.let { prop ->
+    localProp["sign.storeFile"]?.let(::file)?.takeIf { it.exists() }?.let { signFile ->
         signingConfigs {
             create("release") {
                 enableV3Signing = true
-                storeFile = file(prop.getProperty("sign.storeFile"))
-                keyAlias = prop.getProperty("sign.keyAlias")
-                keyPassword = prop.getProperty("sign.storePassword")
-                storePassword = prop.getProperty("sign.storePassword")
-            }
+                storeFile = signFile
+                keyAlias = localProp.getProperty("sign.keyAlias")
+                keyPassword = localProp.getProperty("sign.keyPassword")
+                storePassword = localProp.getProperty("sign.storePassword")
+            }.also { releaseSigningCfg = it }
         }
     }
 
@@ -38,12 +39,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
 
-            signingConfig = signingConfigs.let { configs ->
-                configs.runCatching {
-                    getByName("release")
-                }.getOrDefault(configs.getByName("debug"))
-            }
+        all {
+            signingConfig = releaseSigningCfg ?: signingConfigs["debug"]
         }
     }
 
