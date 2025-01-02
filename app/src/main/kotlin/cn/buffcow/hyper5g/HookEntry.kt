@@ -1,7 +1,5 @@
 package cn.buffcow.hyper5g
 
-import cn.buffcow.hyper5g.extension.LOG_TAG
-import cn.buffcow.hyper5g.extension.SystemUI
 import cn.buffcow.hyper5g.hooker.PluginLoader
 import com.highcapable.yukihookapi.annotation.xposed.InjectYukiHookWithXposed
 import com.highcapable.yukihookapi.hook.factory.configs
@@ -21,13 +19,12 @@ class HookEntry : IYukiHookXposedInit {
     }
 
     override fun onHook() = encase {
-        appClassLoader?.also { Companion.appClassLoader = it }
-        loadApp(SystemUI.PACKAGE_NAME) {
+        loadApp("com.android.systemui") {
             loadHooker(PluginLoader)
         }
     }
 
     companion object {
-        lateinit var appClassLoader: ClassLoader
+        private const val LOG_TAG = "Hyper5GSwitch"
     }
 }
