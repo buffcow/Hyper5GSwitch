@@ -19,7 +19,7 @@ val gitCommitCount
             process.waitFor()
             process.inputStream.bufferedReader().readText().trim().toInt()
         }
-    }.getOrDefault(0)
+    }.getOrDefault(1)
 
 val gitCommitTag
     get() = kotlin.runCatching {

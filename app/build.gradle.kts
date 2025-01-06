@@ -1,6 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.SdkConstants
 import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import java.util.Properties
@@ -13,7 +12,9 @@ plugins {
 
 val localProp by lazy {
     Properties().apply {
-        load(rootProject.file(SdkConstants.FN_LOCAL_PROPERTIES).bufferedReader())
+        rootProject.file("local.properties").takeIf(File::exists)?.let {
+            load(it.bufferedReader())
+        }
     }
 }
 var releaseSigningCfg: ApkSigningConfig? = null
