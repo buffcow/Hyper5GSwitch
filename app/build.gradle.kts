@@ -47,5 +47,6 @@ dependencies {
     implementation(libs.androidx.annotation)
 
     compileOnly(libs.api.xposed)
+    compileOnly(libs.libxposed.api)
     compileOnly(files("libs/telephony.jar"))
 }
