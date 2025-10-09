@@ -19,4 +19,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Hyper5GSwitch"
-include(":app")
+include(":app", ":lib-helper", ":lib-helper:libxposed-compat")
