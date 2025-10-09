@@ -9,6 +9,7 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 agp-app = { id = "com.android.application", version.ref = "agp" }
 agp-lib = { id = "com.android.library", version.ref = "agp" }
 kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+lsplugin-apksign = { id = "org.lsposed.lsplugin.apksign", version = "1.4" }
 
 [libraries]
 androidx-annotation = "androidx.annotation:annotation:1.9.1"

@@ -1,37 +1,22 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.agp.app)
     alias(libs.plugins.kotlin)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.lsplugin.apksign)
 }
 
-val localProp by lazy {
-    Properties().apply {
-        rootProject.file("local.properties").takeIf(File::exists)?.let {
-            load(it.bufferedReader())
-        }
-    }
+apksign {
+    storeFileProperty = "androidStoreFile"
+    storePasswordProperty = "androidStorePassword"
+    keyAliasProperty = "androidKeyAlias"
+    keyPasswordProperty = "androidStorePassword"
 }
-var releaseSigningCfg: ApkSigningConfig? = null
 
 android {
-    localProp["sign.storeFile"]?.let(::file)?.takeIf { it.exists() }?.let { signFile ->
-        signingConfigs {
-            create("release") {
-                enableV3Signing = true
-                storeFile = signFile
-                keyAlias = localProp.getProperty("sign.keyAlias")
-                keyPassword = localProp.getProperty("sign.keyPassword")
-                storePassword = localProp.getProperty("sign.storePassword")
-            }.also { releaseSigningCfg = it }
-        }
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -40,10 +25,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-
-        all {
-            signingConfig = releaseSigningCfg ?: signingConfigs["debug"]
         }
     }
 

@@ -13,27 +13,8 @@ plugins {
     alias(libs.plugins.agp.app) apply false
 }
 
-val gitCommitCount
-    get() = kotlin.runCatching {
-        ProcessBuilder("git", "rev-list", "--count", "HEAD").start().let { process ->
-            process.waitFor()
-            process.inputStream.bufferedReader().readText().trim().toInt()
-        }
-    }.getOrDefault(1)
-
-val gitCommitTag
-    get() = kotlin.runCatching {
-        ProcessBuilder("git", "describe", "--tags", "--long").start().let { process ->
-            process.waitFor()
-            val output = process.inputStream.bufferedReader().readText().trim()
-            val split = output.split('-')
-            if (split.size < 3) throw NullPointerException()
-            "${split[0].filter { it.isDigit() || it == '.' }}.${split[1]}"
-        }
-    }.getOrDefault("1.0.0")
-
-val defaultAppVerCode by extra(gitCommitCount)
-val defaultAppVerName by extra(gitCommitTag)
+val defaultAppVerCode by extra(25)
+val defaultAppVerName by extra("1.3.0")
 val defaultAppPackageName by extra("cn.buffcow.hyper5g")
 
 val androidMinSdkVersion by extra(32)
