@@ -1,17 +1,17 @@
 [versions]
-agp = "8.7.3"
+agp = "8.13.0"
 yuki = "1.2.1"
-kotlin = "2.1.0"
-ksp = "2.1.0-1.0.29"
+kotlin = "2.2.20"
+ksp = "2.2.20-2.0.3"
 
 [plugins]
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-agp-lib = { id = "com.android.library", version.ref = "agp" }
 agp-app = { id = "com.android.application", version.ref = "agp" }
+agp-lib = { id = "com.android.library", version.ref = "agp" }
 kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
 [libraries]
-androidx-annotation = "androidx.annotation:annotation:1.8.2"
+androidx-annotation = "androidx.annotation:annotation:1.9.1"
 api-xposed = "de.robv.android.xposed:api:82"
 api-yuki = { module = "com.highcapable.yukihookapi:api", version.ref = "yuki" }
 ksp-yuki-xposed = { module = "com.highcapable.yukihookapi:ksp-xposed", version.ref = "yuki" }
