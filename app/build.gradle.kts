@@ -5,7 +5,6 @@ import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 plugins {
     alias(libs.plugins.agp.app)
     alias(libs.plugins.kotlin)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.lsplugin.apksign)
 }
 
@@ -42,11 +41,6 @@ android {
 }
 
 dependencies {
-    ksp(libs.ksp.yuki.xposed)
-    implementation(libs.api.yuki)
-    implementation(libs.androidx.annotation)
-
-    compileOnly(libs.api.xposed)
     implementation(project(":lib-helper"))
     compileOnly(files("libs/telephony.jar"))
 }

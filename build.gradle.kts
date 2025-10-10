@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.kotlin) apply false
     alias(libs.plugins.agp.lib) apply false
     alias(libs.plugins.agp.app) apply false

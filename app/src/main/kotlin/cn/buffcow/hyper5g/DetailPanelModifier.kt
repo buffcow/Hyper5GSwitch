@@ -1,33 +1,31 @@
-package cn.buffcow.hyper5g.hooker
+package cn.buffcow.hyper5g
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
-import cn.buffcow.hyper5g.R
-import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
-import com.highcapable.yukihookapi.hook.factory.method
-import com.highcapable.yukihookapi.hook.log.YLog
-import de.robv.android.xposed.XposedHelpers
-import de.robv.android.xposed.XposedHelpers.callMethod
+import cn.buffcow.xp.helper.HookerClassHelper
+import cn.buffcow.xp.helper.ModuleHelper
+import cn.buffcow.xp.helper.ModuleHelper.findAndHookMethod
+import cn.buffcow.xp.helper.XposedHelpers
+import cn.buffcow.xp.helper.XposedHelpers.callMethod
+import io.github.libxposed.api.XposedInterface
 import miui.telephony.TelephonyManager
 import java.lang.ref.WeakReference
 
 /**
- * Hooker for detail panel controller of system ui plugin.
+ * Detail panel modifier of system ui plugin.
  *
  * @author qingyu
  * <p>Create on 2024/12/31 17:22</p>
  */
-class DetailPanelHooker private constructor(
-    private val pluginClassLoader: ClassLoader,
-    private val afterHooked: ((DetailPanelHooker) -> Unit)?,
-) : YukiBaseHooker() {
+class DetailPanelModifier : HookerClassHelper.MethodHook() {
 
     private val telephonyManager by lazy { TelephonyManager.getDefault() }
 
@@ -40,72 +38,105 @@ class DetailPanelHooker private constructor(
     private inline val header5GToggle: CheckBox?
         get() = headerLayout?.findViewById(android.R.id.toggle)
 
-    override fun onHook() {
-        "miui.systemui.controlcenter.panel.detail.DetailPanelController".toClass(pluginClassLoader).apply {
-            method { name = "onCreate" }.hook().after {
-                add5GDetailHeaderLayout(instance)
+    private var moduleResources: Resources? = null
+
+    fun mod(pluginContext: Context) {
+        var isHyperOS3 = true
+        val pluginClassLoader = pluginContext.classLoader
+
+        val controllerClass = XposedHelpers.findClassIfExists(
+            "miui.systemui.controlcenter.panel.secondary.detail.DetailPanelDelegate",
+            pluginClassLoader
+        ) ?: kotlin.run {
+            isHyperOS3 = false
+            XposedHelpers.findClass(
+                "miui.systemui.controlcenter.panel.detail.DetailPanelController",
+                pluginClassLoader
+            )
+        }
+
+        findAndHookMethod(controllerClass, "onCreate", this)
+
+        findAndHookMethod(
+            controllerClass,
+            "setupDetailHeader",
+            "com.android.systemui.plugins.qs.DetailAdapter", this
+        )
+
+        findAndHookMethod(controllerClass, "updateTexts", this)
+
+        findAndHookMethod(
+            controllerClass,
+            if (isHyperOS3) "updateResources" else "updateBackgroundColor",
+            this
+        )
+
+        findAndHookMethod(controllerClass, "onDestroy", this)
+    }
+
+    override fun after(callback: XposedInterface.AfterHookCallback) {
+        super.after(callback)
+        val controller = callback.thisObject ?: return
+        when (callback.member.name) {
+            "onCreate" -> onCreate(controller)
+
+            "setupDetailHeader" -> setup5GDetailHeader(controller)
+
+            "updateTexts" -> headerTitleTv?.update5GHeaderText()
+
+            "updateResources",
+            "updateBackgroundColor" -> {
+                headerTitleTv?.update5GHeaderBgColor(getDetailAdapter(controller))
             }
 
-            method {
-                paramCount(1)
-                name = "setupDetailHeader"
-            }.hook().after {
-                headerLayout?.let { setup5GDetailHeader(instance, it) }
-            }
-
-            method { name = "updateTexts" }.hook().after {
-                headerTitleTv?.update5GHeaderText()
-            }
-
-            method { name = "updateBackgroundColor" }.hook().after {
-                headerTitleTv?.update5GHeaderBgColor(getDetailAdapter(instance))
-            }
-
-            method { name = "onDestroy" }.hook().after { onDestroy() }
-
-            afterHooked?.invoke(this@DetailPanelHooker)
+            "onDestroy" -> onDestroy()
         }
     }
 
-    fun setDefaultSim(slot: Int?) {
+    fun notifyDefaultSimSlotChanged(slot: Int?) {
         header5GToggle?.apply {
             postDelayed({ update5GHeaderToggleStatus(slot) }, 100)
         }
     }
 
-    private fun add5GDetailHeaderLayout(ctrl: Any) {
-        YLog.debug("add5GDetailHeaderLayout, ctrl=$ctrl")
+    private fun onCreate(ctrl: Any) {
+        XposedHelpers.log("onCreate, ctrl=$ctrl")
         val ctx = callMethod(ctrl, "getContext") as Context
-        val res = ctx.resources
+        initModuleResource(ctx)
+        inflate5GDetailHeader(ctx, ctrl)
+    }
 
-        fun inflateDetailHeaderLayout(root: ViewGroup): View {
+    private fun inflate5GDetailHeader(ctx: Context, ctrl: Any) {
+        fun inflateDetailHeaderLayout(root: ViewGroup): View? {
             @SuppressLint("DiscouragedApi")
-            val headerLayoutId = res.getIdentifier(
-                "detail_header",
-                "layout",
-                "miui.systemui.plugin"
-            )
-            return LayoutInflater.from(ctx).inflate(headerLayoutId, root, false).apply {
-                (this as ViewGroup)
-                id = android.R.id.content
-                getChildAt(0).id = android.R.id.title
-                (layoutParams as? LinearLayout.LayoutParams)?.also { params ->
-                    params.topMargin = 0
-                    layoutParams = params
+            val headerLayoutId = ctx.getIdentifier("detail_header", "layout")
+            return if (headerLayoutId != 0) {
+                LayoutInflater.from(ctx).inflate(headerLayoutId, root, false).apply {
+                    (this as ViewGroup)
+                    id = android.R.id.content
+                    getChildAt(0).id = android.R.id.title
+                    (layoutParams as? LinearLayout.LayoutParams)?.also { params ->
+                        params.topMargin = 0
+                        layoutParams = params
+                    }
+                    _headerLayout = WeakReference(this)
                 }
-                _headerLayout = WeakReference(this)
+            } else {
+                null
             }
         }
 
-        (callMethod(ctrl, "getContent") as LinearLayout).also { parent ->
-            inflateDetailHeaderLayout(parent).also {
+        getContent(ctx, ctrl).also { parent ->
+            inflateDetailHeaderLayout(parent)?.let {
                 parent.addView(it, 1, it.layoutParams)
             }
         }
     }
 
-    private fun setup5GDetailHeader(ctrl: Any, header: ViewGroup) {
-        header.visibility = if (isCellularDetailPanel(ctrl)) View.VISIBLE else View.GONE
+    private fun setup5GDetailHeader(ctrl: Any) {
+        headerLayout?.let {
+            it.visibility = if (isCellularDetailPanel(ctrl)) View.VISIBLE else View.GONE
+        }
         headerTitleTv?.apply {
             update5GHeaderText()
             update5GHeaderBgColor(getDetailAdapter(ctrl))
@@ -148,13 +179,17 @@ class DetailPanelHooker private constructor(
     }
 
     private fun TextView.update5GHeaderText() {
-        refreshModuleAppResources()
-        text = moduleAppResources.getString(R.string.hyper_5g_switch_title)
+        moduleResources?.let {
+            text = it.getString(R.string.hyper_5g_switch_title)
+        }
     }
 
     private fun TextView.update5GHeaderBgColor(adapter: Any?) {
         adapter ?: return
-        val compatCls = "miui.systemui.controlcenter.utils.DetailAdapterCompat".toClass(pluginClassLoader)
+        val compatCls = XposedHelpers.findClass(
+            "miui.systemui.controlcenter.utils.DetailAdapterCompat",
+            context.classLoader
+        )
         (callMethod(
             XposedHelpers.getStaticObjectField(compatCls, "INSTANCE"),
             "getTitleTextColorCompat",
@@ -168,14 +203,34 @@ class DetailPanelHooker private constructor(
         } ?: telephonyManager.isUserFiveGEnabled
     }
 
+    private fun initModuleResource(ctx: Context) {
+        if (moduleResources == null) {
+            moduleResources = ModuleHelper.getModuleRes(ctx, BuildConfig.APPLICATION_ID)
+            XposedHelpers.log("created moduleResources: $moduleResources")
+        }
+    }
+
     private fun onDestroy() {
-        YLog.debug("onDestroy")
+        XposedHelpers.log("onDestroy")
         headerTitleTv?.apply {
             setOnClickListener(null)
             setOnLongClickListener(null)
         }
         _headerLayout?.clear()
         _headerLayout = null
+        moduleResources = null
+    }
+
+    private fun getContent(ctx: Context, ctrl: Any): ViewGroup {
+        return (callMethod(ctrl, "getView") as ViewGroup).run {
+            val id = ctx.getIdentifier("scale_content", "id")
+            findViewById(id)
+        }
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private fun Context.getIdentifier(name: String, type: String, pkg: String = packageName): Int {
+        return resources.getIdentifier(name, type, pkg)
     }
 
     private fun postStartActivityDismissingKeyguard(ctrl: Any, intent: Intent, delay: Int = 200) {
@@ -200,18 +255,5 @@ class DetailPanelHooker private constructor(
 
     companion object {
         private const val PKG_NAME_PHONE = "com.android.phone"
-
-        private var sInstance: DetailPanelHooker? = null
-
-        fun newInstance(
-            pluginClassLoader: ClassLoader,
-            afterHooked: ((DetailPanelHooker) -> Unit)? = null,
-        ): DetailPanelHooker {
-            return sInstance ?: synchronized(this) {
-                sInstance ?: DetailPanelHooker(pluginClassLoader, afterHooked).also {
-                    sInstance = it
-                }
-            }
-        }
     }
 }

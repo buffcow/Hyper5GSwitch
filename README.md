@@ -8,9 +8,9 @@ Add a 5G switch to the mobile network panel, only for devices that support 5G ne
 2. 无图标，无配置，即装即用
 
 ## 使用
-1. 在Xposed管理器(LSPosed, EdXposed...)中激活模块 (强烈推荐使用LSP)
+1. 在LSPosed管理器中激活模块
 2. 作用域勾选 系统界面(**`com.android.systemui`**)
-3. **重启系统界面或手机**
+3. **重启手机**
 
 ## 下载
 [LSPosed 仓库](https://github.com/Xposed-Modules-Repo/cn.buffcow.hyper5g/releases)
@@ -21,4 +21,5 @@ Add a 5G switch to the mobile network panel, only for devices that support 5G ne
 请先检查模块是否正常激活，并且作用域是否勾选。<br>如果排查后仍有错误，请提交issue。或联系酷安[@buffcow](http://www.coolapk.com/u/1188320)(qingyu)
 
 ## 致谢
-模块使用 [Yuki Hook API](https://github.com/fankes/YukiHookAPI) 构建
+- [libxposed](https://github.com/libxposed)
+- [customiuizer](https://github.com/MonwF/customiuizer)
