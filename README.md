@@ -22,4 +22,4 @@ Add a 5G switch to the mobile network panel, only for devices that support 5G ne
 
 ## 致谢
 - [libxposed](https://github.com/libxposed)
-- [customiuizer](https://github.com/MonwF/customiuizer)
+- [~~customiuizer~~](https://github.com/MonwF/customiuizer)
