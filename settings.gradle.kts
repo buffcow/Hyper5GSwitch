@@ -14,9 +14,8 @@ dependencyResolutionManagement {
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://api.xposed.info/") }
-        maven { url = uri(file("repo")) }
     }
 }
 
 rootProject.name = "Hyper5GSwitch"
-include(":app", ":lib-helper", ":lib-helper:libxposed-compat")
+include(":app")

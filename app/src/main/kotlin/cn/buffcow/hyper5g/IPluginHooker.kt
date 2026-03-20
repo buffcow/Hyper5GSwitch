@@ -2,7 +2,6 @@ package cn.buffcow.hyper5g
 
 import android.content.ComponentName
 import android.content.Context
-import io.github.libxposed.api.XposedModuleInterface
 
 /**
  * @author qingyu
@@ -10,7 +9,7 @@ import io.github.libxposed.api.XposedModuleInterface
  */
 interface IPluginHooker {
     fun onPluginCreated(
-        param: XposedModuleInterface.PackageLoadedParam,
+        classLoader: ClassLoader,
         pluginContext: Context,
         component: ComponentName
     )

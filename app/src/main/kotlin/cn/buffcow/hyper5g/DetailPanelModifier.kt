@@ -3,6 +3,7 @@ package cn.buffcow.hyper5g
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.View
@@ -10,11 +11,8 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
-import cn.buffcow.xp.helper.HookerClassHelper
-import cn.buffcow.xp.helper.ModuleHelper
-import cn.buffcow.xp.helper.ModuleHelper.findAndHookMethod
-import cn.buffcow.xp.helper.XposedHelpers
-import cn.buffcow.xp.helper.XposedHelpers.callMethod
+import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.XposedHelpers.callMethod
 import io.github.libxposed.api.XposedInterface
 import miui.telephony.TelephonyManager
 import java.lang.ref.WeakReference
@@ -25,7 +23,7 @@ import java.lang.ref.WeakReference
  * @author qingyu
  * <p>Create on 2024/12/31 17:22</p>
  */
-class DetailPanelModifier : HookerClassHelper.MethodHook() {
+class DetailPanelModifier : XposedInterface.Hooker {
 
     private val telephonyManager by lazy { TelephonyManager.getDefault() }
 
@@ -55,41 +53,51 @@ class DetailPanelModifier : HookerClassHelper.MethodHook() {
             )
         }
 
-        findAndHookMethod(controllerClass, "onCreate", this)
+        // onCreate
+        xposedModule
+            .hook(controllerClass.getDeclaredMethod("onCreate"))
+            .intercept(this)
 
-        findAndHookMethod(
+        // setupDetailHeader
+        XposedHelpers.findMethodExact(
             controllerClass,
             "setupDetailHeader",
-            "com.android.systemui.plugins.qs.DetailAdapter", this
-        )
+            "com.android.systemui.plugins.qs.DetailAdapter"
+        ).also { m -> xposedModule.hook(m).intercept(this) }
 
-        findAndHookMethod(controllerClass, "updateTexts", this)
+        // updateTexts
+        xposedModule
+            .hook(controllerClass.getDeclaredMethod("updateTexts"))
+            .intercept(this)
 
-        findAndHookMethod(
-            controllerClass,
+        // updateResources
+        controllerClass.getDeclaredMethod(
             if (isHyperOS3) "updateResources" else "updateBackgroundColor",
-            this
-        )
+        ).also { m -> xposedModule.hook(m).intercept(this) }
 
-        findAndHookMethod(controllerClass, "onDestroy", this)
+        // onDestroy
+        xposedModule
+            .hook(controllerClass.getDeclaredMethod("onDestroy"))
+            .intercept(this)
     }
 
-    override fun after(callback: XposedInterface.AfterHookCallback) {
-        super.after(callback)
-        val controller = callback.thisObject ?: return
-        when (callback.member.name) {
-            "onCreate" -> onCreate(controller)
+    override fun intercept(chain: XposedInterface.Chain): Any? {
+        return chain.proceed().apply {
+            val controller = chain.thisObject ?: return null
+            when (chain.executable.name) {
+                "onCreate" -> onCreate(controller)
 
-            "setupDetailHeader" -> setup5GDetailHeader(controller)
+                "setupDetailHeader" -> setup5GDetailHeader(controller)
 
-            "updateTexts" -> headerTitleTv?.update5GHeaderText()
+                "updateTexts" -> headerTitleTv?.update5GHeaderText()
 
-            "updateResources",
-            "updateBackgroundColor" -> {
-                headerTitleTv?.update5GHeaderBgColor(getDetailAdapter(controller))
+                "updateResources",
+                "updateBackgroundColor" -> {
+                    headerTitleTv?.update5GHeaderBgColor(getDetailAdapter(controller))
+                }
+
+                "onDestroy" -> onDestroy()
             }
-
-            "onDestroy" -> onDestroy()
         }
     }
 
@@ -100,7 +108,7 @@ class DetailPanelModifier : HookerClassHelper.MethodHook() {
     }
 
     private fun onCreate(ctrl: Any) {
-        XposedHelpers.log("onCreate, ctrl=$ctrl")
+        log("onCreate, ctrl=$ctrl")
         val ctx = callMethod(ctrl, "getContext") as Context
         initModuleResource(ctx)
         inflate5GDetailHeader(ctx, ctrl)
@@ -205,13 +213,13 @@ class DetailPanelModifier : HookerClassHelper.MethodHook() {
 
     private fun initModuleResource(ctx: Context) {
         if (moduleResources == null) {
-            moduleResources = ModuleHelper.getModuleRes(ctx, BuildConfig.APPLICATION_ID)
-            XposedHelpers.log("created moduleResources: $moduleResources")
+            moduleResources = createModuleContext(ctx).resources
+            log("created moduleResources: $moduleResources")
         }
     }
 
     private fun onDestroy() {
-        XposedHelpers.log("onDestroy")
+        log("onDestroy")
         headerTitleTv?.apply {
             setOnClickListener(null)
             setOnLongClickListener(null)
@@ -251,6 +259,16 @@ class DetailPanelModifier : HookerClassHelper.MethodHook() {
                         && cmp.packageName == PKG_NAME_PHONE
             }
         } == true
+    }
+
+    private fun createModuleContext(
+        context: Context,
+        modulePkg: String? = BuildConfig.APPLICATION_ID,
+        config: Configuration? = null
+    ): Context {
+        return with(context.createPackageContext(modulePkg, Context.CONTEXT_IGNORE_SECURITY)) {
+            config?.let { createConfigurationContext(config) } ?: this
+        }
     }
 
     companion object {

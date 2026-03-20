@@ -2,11 +2,7 @@ package cn.buffcow.hyper5g
 
 import android.content.ComponentName
 import android.content.Context
-import cn.buffcow.xp.helper.HookerClassHelper
-import cn.buffcow.xp.helper.ModuleHelper
-import cn.buffcow.xp.helper.XposedHelpers
-import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedModuleInterface
+import de.robv.android.xposed.XposedHelpers
 import miui.telephony.TelephonyManager
 
 /**
@@ -22,27 +18,28 @@ object ControlCenterHooker : IPluginHooker {
     }
 
     override fun onPluginCreated(
-        param: XposedModuleInterface.PackageLoadedParam,
+        classLoader: ClassLoader,
         pluginContext: Context,
         component: ComponentName
     ) {
         if (component.packageName == "miui.systemui.plugin"
             && component.className == "miui.systemui.controlcenter.MiuiControlCenter"
         ) {
-            XposedHelpers.log("Plugin for systemui control center created.")
+            log("Plugin for systemui control center created.")
             if (TelephonyManager.getDefault().isFiveGCapable) {
                 panelModifier.mod(pluginContext)
-                ModuleHelper.findAndHookMethod(
-                    "com.android.systemui.qs.tiles.MiuiCellularTile\$CellSignalCallback",
-                    param.classLoader,
+                XposedHelpers.findMethodExact(
+                    $$"com.android.systemui.qs.tiles.MiuiCellularTile$CellSignalCallback",
+                    classLoader,
                     "setDefaultSim",
-                    Int::class.javaPrimitiveType, object : HookerClassHelper.MethodHook() {
-                        override fun after(callback: XposedInterface.AfterHookCallback) {
-                            super.after(callback)
-                            panelModifier.notifyDefaultSimSlotChanged(callback.args[0] as Int)
+                    Int::class.javaPrimitiveType,
+                ).also { method ->
+                    xposedModule.hook(method).intercept { chain ->
+                        chain.proceed().also {
+                            panelModifier.notifyDefaultSimSlotChanged(chain.args[0] as Int)
                         }
                     }
-                )
+                }
             }
         }
     }

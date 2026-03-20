@@ -1,16 +1,12 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.2.20"
-xposed-api = "100"
-commons-lang3 = "3.19.0"
+agp = "9.1.0"
+xposed-api = "101.0.0"
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
 agp-lib = { id = "com.android.library", version.ref = "agp" }
-kotlin = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 lsplugin-apksign = { id = "org.lsposed.lsplugin.apksign", version = "1.4" }
 
 [libraries]
-androidx-annotation = "androidx.annotation:annotation:1.9.1"
-libxposed-api = { group = "io.github.libxposed", name = "api", version.ref = "xposed-api" }
-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+libxposed-api-legacy = "de.robv.android.xposed:api:82"
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "xposed-api" }

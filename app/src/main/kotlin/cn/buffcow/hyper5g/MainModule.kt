@@ -2,10 +2,8 @@ package cn.buffcow.hyper5g
 
 import android.content.ComponentName
 import android.content.Context
-import cn.buffcow.xp.helper.HookerClassHelper
-import cn.buffcow.xp.helper.ModuleHelper
-import cn.buffcow.xp.helper.XposedHelpers
-import io.github.libxposed.api.XposedInterface
+import android.util.Log
+import de.robv.android.xposed.XposedHelpers
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import java.util.concurrent.CopyOnWriteArrayList
@@ -14,20 +12,16 @@ import java.util.concurrent.CopyOnWriteArrayList
  * @author qingyu
  * <p>Create on 2025/10/09 15:15</p>
  */
-class MainModule(
-    base: XposedInterface,
-    param: XposedModuleInterface.ModuleLoadedParam
-) : XposedModule(base, param) {
+class MainModule : XposedModule() {
 
     private val hookers = CopyOnWriteArrayList<IPluginHooker>()
 
-    init {
-        XposedHelpers.moduleInst = this
-        XposedHelpers.TAG_NAME = "Hyper5G"
+    override fun onModuleLoaded(param: XposedModuleInterface.ModuleLoadedParam) {
+        xposedModule = this
     }
 
-    override fun onPackageLoaded(param: XposedModuleInterface.PackageLoadedParam) {
-        super.onPackageLoaded(param)
+    override fun onPackageReady(param: XposedModuleInterface.PackageReadyParam) {
+        super.onPackageReady(param)
 
         val packageName = param.packageName
         log("onPackageLoaded: $packageName")
@@ -36,30 +30,39 @@ class MainModule(
 
         addHookerIfAbsent(ControlCenterHooker)
 
-        hookPluginFactory(param)
+        hookPluginFactory(param.classLoader)
     }
 
-    private fun hookPluginFactory(param: XposedModuleInterface.PackageLoadedParam) {
-        ModuleHelper.findAndHookMethod(
-            "com.android.systemui.shared.plugins.PluginInstance\$PluginFactory",
-            param.classLoader,
-            "createPluginContext",
-            object : HookerClassHelper.MethodHook() {
-                override fun after(callback: XposedInterface.AfterHookCallback) {
-                    super.after(callback)
+    private fun hookPluginFactory(classLoader: ClassLoader) {
+        XposedHelpers.findMethodExact(
+            $$"com.android.systemui.shared.plugins.PluginInstance$PluginFactory",
+            classLoader,
+            "createPluginContext"
+        ).also { method ->
+            xposedModule.hook(method).intercept { chain ->
+                chain.proceed().also { result ->
                     if (hookers.isNotEmpty()) {
-                        val pluginContext = callback.result as Context
-                        val cmp = XposedHelpers.getObjectField(callback.thisObject, "mComponentName") as ComponentName
+                        val pluginContext = result as Context
+                        val cmp = XposedHelpers.getObjectField(chain.thisObject, "mComponentName") as ComponentName
                         hookers.forEach {
-                            it.onPluginCreated(param, pluginContext, cmp)
+                            it.onPluginCreated(classLoader, pluginContext, cmp)
                         }
                     }
                 }
             }
-        )
+        }
     }
 
     private fun addHookerIfAbsent(hooker: IPluginHooker) {
         hookers.addIfAbsent(hooker)
     }
 }
+
+private const val TAG = "Hyper5GSwitch"
+
+lateinit var xposedModule: XposedModule
+    private set
+
+fun log(msg: String) = xposedModule.log(Log.DEBUG, TAG, msg)
+// fun loge(msg: String) = xposedModule.log(Log.ERROR, TAG, msg)
+// fun loge(msg: String, tr: Throwable) = xposedModule.log(Log.ERROR, TAG, msg, tr)
