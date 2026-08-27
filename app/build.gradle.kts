@@ -18,12 +18,12 @@ apksign {
 android {
     namespace = "cn.buffcow.hyper5g"
 
-    compileSdk = 36
-    buildToolsVersion = "36.1.0"
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         minSdk = 32
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 26
         versionName = "1.3.2"
         applicationId = namespace
@@ -31,12 +31,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            optimization {
+                enable = true
+            }
         }
     }
 

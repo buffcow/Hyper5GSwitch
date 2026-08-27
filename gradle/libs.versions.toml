@@ -1,10 +1,9 @@
 [versions]
-agp = "9.1.0"
+agp = "9.3.2"
 xposed-api = "101.0.0"
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
-agp-lib = { id = "com.android.library", version.ref = "agp" }
 lsplugin-apksign = { id = "org.lsposed.lsplugin.apksign", version = "1.4" }
 
 [libraries]
