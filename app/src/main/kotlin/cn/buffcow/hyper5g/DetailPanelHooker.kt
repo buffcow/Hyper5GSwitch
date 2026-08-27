@@ -3,7 +3,6 @@ package cn.buffcow.hyper5g
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.content.res.Resources
 import android.view.LayoutInflater
 import android.view.View
@@ -11,9 +10,8 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.LinearLayout
 import android.widget.TextView
-import de.robv.android.xposed.XposedHelpers
-import de.robv.android.xposed.XposedHelpers.callMethod
 import io.github.libxposed.api.XposedInterface
+import io.github.libxposed.api.XposedModule
 import miui.telephony.TelephonyManager
 import java.lang.ref.WeakReference
 
@@ -23,7 +21,10 @@ import java.lang.ref.WeakReference
  * @author qingyu
  * <p>Create on 2024/12/31 17:22</p>
  */
-class DetailPanelModifier : XposedInterface.Hooker {
+internal class DetailPanelHooker(
+    private val xposedModule: XposedModule,
+    private val onDebug: (msg: String) -> Unit,
+) : XposedInterface.Hooker {
 
     private val telephonyManager by lazy { TelephonyManager.getDefault() }
 
@@ -38,16 +39,15 @@ class DetailPanelModifier : XposedInterface.Hooker {
 
     private var moduleResources: Resources? = null
 
-    fun mod(pluginContext: Context) {
-        var isHyperOS3 = true
+    fun install(pluginContext: Context) {
         val pluginClassLoader = pluginContext.classLoader
 
-        val controllerClass = XposedHelpers.findClassIfExists(
+        val detailPanelDelegateClass = loadClassOrNull(
             "miui.systemui.controlcenter.panel.secondary.detail.DetailPanelDelegate",
             pluginClassLoader
-        ) ?: kotlin.run {
-            isHyperOS3 = false
-            XposedHelpers.findClass(
+        )
+        val controllerClass = detailPanelDelegateClass ?: kotlin.run {
+            loadClass(
                 "miui.systemui.controlcenter.panel.detail.DetailPanelController",
                 pluginClassLoader
             )
@@ -55,29 +55,38 @@ class DetailPanelModifier : XposedInterface.Hooker {
 
         // onCreate
         xposedModule
-            .hook(controllerClass.getDeclaredMethod("onCreate"))
+            .hook(controllerClass.findMethod("onCreate"))
             .intercept(this)
 
         // setupDetailHeader
-        XposedHelpers.findMethodExact(
-            controllerClass,
+        controllerClass.findMethod(
             "setupDetailHeader",
-            "com.android.systemui.plugins.qs.DetailAdapter"
+            loadClass("com.android.systemui.plugins.qs.DetailAdapter", pluginClassLoader)
         ).also { m -> xposedModule.hook(m).intercept(this) }
 
         // updateTexts
         xposedModule
-            .hook(controllerClass.getDeclaredMethod("updateTexts"))
+            .hook(controllerClass.findMethod("updateTexts"))
             .intercept(this)
 
         // updateResources
-        controllerClass.getDeclaredMethod(
-            if (isHyperOS3) "updateResources" else "updateBackgroundColor",
-        ).also { m -> xposedModule.hook(m).intercept(this) }
+        val updateResourcesMethod = if (detailPanelDelegateClass != null) {
+            try {
+                // HyperOS 4
+                controllerClass.findMethod("updateResources", java.lang.Boolean.TYPE)
+            } catch (_: NoSuchMethodException) {
+                // HyperOS 3
+                controllerClass.findMethod("updateResources")
+            }
+        } else {
+            // HyperOS 2
+            controllerClass.findMethod("updateBackgroundColor")
+        }
+        xposedModule.hook(updateResourcesMethod).intercept(this)
 
         // onDestroy
         xposedModule
-            .hook(controllerClass.getDeclaredMethod("onDestroy"))
+            .hook(controllerClass.findMethod("onDestroy"))
             .intercept(this)
     }
 
@@ -108,8 +117,8 @@ class DetailPanelModifier : XposedInterface.Hooker {
     }
 
     private fun onCreate(ctrl: Any) {
-        log("onCreate, ctrl=$ctrl")
-        val ctx = callMethod(ctrl, "getContext") as Context
+        onDebug("onCreate, ctrl=$ctrl")
+        val ctx = ctrl.javaClass.findMethod("getContext").invokeNative(ctrl) as Context
         initModuleResource(ctx)
         inflate5GDetailHeader(ctx, ctrl)
     }
@@ -194,14 +203,22 @@ class DetailPanelModifier : XposedInterface.Hooker {
 
     private fun TextView.update5GHeaderBgColor(adapter: Any?) {
         adapter ?: return
-        val compatCls = XposedHelpers.findClass(
+        val compatClass = loadClass(
             "miui.systemui.controlcenter.utils.DetailAdapterCompat",
             context.classLoader
         )
-        (callMethod(
-            XposedHelpers.getStaticObjectField(compatCls, "INSTANCE"),
+        val detailAdapterClass = loadClass(
+            "com.android.systemui.plugins.qs.DetailAdapter",
+            context.classLoader
+        )
+        (compatClass.findMethod(
             "getTitleTextColorCompat",
-            adapter, context
+            detailAdapterClass,
+            Context::class.java
+        ).invokeNative(
+            compatClass.readStaticField("INSTANCE"),
+            adapter,
+            context
         ) as? Int)?.also(::setTextColor)
     }
 
@@ -213,13 +230,13 @@ class DetailPanelModifier : XposedInterface.Hooker {
 
     private fun initModuleResource(ctx: Context) {
         if (moduleResources == null) {
-            moduleResources = createModuleContext(ctx).resources
-            log("created moduleResources: $moduleResources")
+            moduleResources = createModuleResources(ctx)
+            onDebug("created moduleResources: $moduleResources")
         }
     }
 
     private fun onDestroy() {
-        log("onDestroy")
+        onDebug("onDestroy")
         headerTitleTv?.apply {
             setOnClickListener(null)
             setOnLongClickListener(null)
@@ -230,7 +247,7 @@ class DetailPanelModifier : XposedInterface.Hooker {
     }
 
     private fun getContent(ctx: Context, ctrl: Any): ViewGroup {
-        return (callMethod(ctrl, "getView") as ViewGroup).run {
+        return (ctrl.javaClass.findMethod("getView").invokeNative(ctrl) as ViewGroup).run {
             val id = ctx.getIdentifier("scale_content", "id")
             findViewById(id)
         }
@@ -242,18 +259,21 @@ class DetailPanelModifier : XposedInterface.Hooker {
     }
 
     private fun postStartActivityDismissingKeyguard(ctrl: Any, intent: Intent, delay: Int = 200) {
-        XposedHelpers.getObjectField(ctrl, "activityStarter").apply {
-            callMethod(this, "postStartActivityDismissingKeyguard", intent, delay)
-        }
+        val activityStarter = requireNotNull(ctrl.readField("activityStarter"))
+        activityStarter.javaClass.findMethod(
+            "postStartActivityDismissingKeyguard",
+            Intent::class.java,
+            Integer.TYPE
+        ).invokeNative(activityStarter, intent, delay)
     }
 
     private fun getDetailAdapter(ctrl: Any): Any? {
-        return XposedHelpers.getObjectField(ctrl, "detailAdapter")
+        return ctrl.readField("detailAdapter")
     }
 
     private fun isCellularDetailPanel(ctrl: Any): Boolean {
         val adapter = getDetailAdapter(ctrl) ?: return false
-        return (callMethod(adapter, "getSettingsIntent") as? Intent)?.let {
+        return (adapter.javaClass.findMethod("getSettingsIntent").invokeNative(adapter) as? Intent)?.let {
             it.component?.let { cmp ->
                 cmp.className == "$PKG_NAME_PHONE.settings.MobileNetworkSettings"
                         && cmp.packageName == PKG_NAME_PHONE
@@ -261,14 +281,10 @@ class DetailPanelModifier : XposedInterface.Hooker {
         } == true
     }
 
-    private fun createModuleContext(
+    private fun createModuleResources(
         context: Context,
-        modulePkg: String? = BuildConfig.APPLICATION_ID,
-        config: Configuration? = null
-    ): Context {
-        return with(context.createPackageContext(modulePkg, Context.CONTEXT_IGNORE_SECURITY)) {
-            config?.let { createConfigurationContext(config) } ?: this
-        }
+    ): Resources {
+        return context.packageManager.getResourcesForApplication(xposedModule.moduleApplicationInfo)
     }
 
     companion object {

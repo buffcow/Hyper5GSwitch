@@ -1,11 +1,10 @@
 [versions]
 agp = "9.3.2"
-xposed-api = "101.0.0"
+xposed-api = "102.0.0"
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
 lsplugin-apksign = { id = "org.lsposed.lsplugin.apksign", version = "1.4" }
 
 [libraries]
-libxposed-api-legacy = "de.robv.android.xposed:api:82"
 libxposed-api = { module = "io.github.libxposed:api", version.ref = "xposed-api" }

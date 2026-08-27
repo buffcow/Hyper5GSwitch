@@ -67,6 +67,5 @@ android {
 
 dependencies {
     compileOnly(libs.libxposed.api)
-    compileOnly(libs.libxposed.api.legacy)
     compileOnly(files("libs/telephony.jar"))
 }
