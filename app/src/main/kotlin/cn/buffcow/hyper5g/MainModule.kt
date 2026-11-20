@@ -19,11 +19,25 @@ class MainModule : XposedModule() {
     override fun onPackageReady(param: XposedModuleInterface.PackageReadyParam) {
         super.onPackageReady(param)
 
-        val packageName = param.packageName
-        if (!param.isFirstPackage || packageName != "com.android.systemui") return
+        if (!param.isFirstPackage) return
 
-        logDebug("onPackageLoaded: $packageName")
-        hookPluginFactory(param.classLoader)
+        when (param.packageName) {
+            "com.android.systemui" -> {
+                logDebug("onPackageLoaded: ${param.packageName}")
+                hookPluginFactory(param.classLoader)
+            }
+            "com.android.phone" -> hookFiveGNetworkVisibility(param.classLoader)
+        }
+    }
+
+    private fun hookFiveGNetworkVisibility(classLoader: ClassLoader) {
+        runCatching {
+            val method = loadClass("com.android.phone.utils.FiveGUtils", classLoader)
+                .findMethod("isFiveGNetworkForceVisable")
+            check(method.returnType == java.lang.Boolean.TYPE) { "Unexpected return type: $method" }
+            xposedModule.hook(method).intercept { true }
+            logDebug("Hooked FiveGUtils.isFiveGNetworkForceVisable")
+        }.onFailure { logError("Failed to hook FiveGUtils.isFiveGNetworkForceVisable", it) }
     }
 
     private fun hookPluginFactory(classLoader: ClassLoader) {
